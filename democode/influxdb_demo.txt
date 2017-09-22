@@ -1,0 +1,72 @@
+import pprint
+import json
+import random
+import string
+
+from influxdb import InfluxDBClient
+
+
+def test_influxdb():
+    client = InfluxDBClient('192.168.147.90', 8086, 'root', '', '')
+    print("### database information")
+    pprint.pprint(client.get_list_database())
+
+    print("### table information")
+    client = InfluxDBClient('192.168.147.90', 8086, 'root', '', 'testdb')
+    result = client.query('show measurements;')
+    pprint.pprint(result)
+
+    print("### insert data")
+    json_body = [
+        {
+            "measurement": "sqlstat",
+            "tags": {
+                "sqlid": "s123"
+            },
+            "time": "2017-03-12 22:00:00",
+            "fields": {
+                "cost": 89,
+                "exec_time": 100
+            }
+        }
+    ]
+    client.write_points(json_body)
+    result = client.query('select * from sqlstat;')
+    pprint.pprint(result)
+
+    print("### drop table")
+    client.query('delete from sqlstat;')
+
+
+def test_json():
+    data = {"spam": "foo", "parrot": 42}
+    in_json = json.dumps(data)
+    print type(in_json)
+    pprint.pprint(in_json)
+
+    data = json.loads('{"spam": "foo", "parrot": 42}')
+    print type(data)
+    pprint.pprint(data)
+
+
+if __name__ == '__main__':
+
+    client = InfluxDBClient('192.168.147.90', 8086, 'root', '', 'testdb')
+    json_body = []
+
+    # print('{0:0>2}'.format(random.randint(0, 9)))
+
+    # salt = ''.join(random.sample(string.ascii_letters + string.digits, 8))
+    # print salt
+    sqlid = ''.join(random.sample(string.ascii_letters + string.digits, 8))
+    for i in range(1, 2000):
+        str = '{"measurement": "sqlstat","tags": {"sqlid": "' + sqlid + '"},"time": "2017-09-21 ' + '{0:0>2}'.format(
+            random.randint(0, 23)) + ':' + '{0:0>2}'.format(random.randint(0, 59)) + ':' + '{0:0>2}'.format(
+            random.randint(0, 59)) + '","fields": {"cost": ' + '{0:0>2}'.format(
+            random.randint(1000, 2000)) + ',"exec_time":' + '{0:0>2}'.format(random.randint(100, 200)) + '}}'
+        json_body.append(json.loads(str))
+
+    client.write_points(json_body)
+
+    print('end')
+
